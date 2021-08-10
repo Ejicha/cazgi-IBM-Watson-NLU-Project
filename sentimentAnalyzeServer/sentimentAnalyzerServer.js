@@ -1,5 +1,25 @@
 const express = require('express');
 const app = new express();
+const dotenv = require('dotenv');
+dotenv.config();
+
+function getNLUInstance() {
+    let api_key = process.env.API_KEY;
+    let api_url = process.env.API_URL;
+
+    const NaturalLanguageUnderstandingV1 = require('ibm-watson/natural-language-understanding/v1');
+    const { IamAuthenticator } = require('ibm-watson/auth');
+
+    const naturalLanguageUnderstanding = new NaturalLanguageUnderstandingV1({
+        version: '2021-08-01',
+        authenticator: new IamAuthenticator({
+        apikey: api_key,
+    }),
+  serviceUrl: api_url,
+});
+return naturalLanguageUnderstanding;
+
+}
 
 app.use(express.static('client'))
 
@@ -12,19 +32,98 @@ app.get("/",(req,res)=>{
 
 app.get("/url/emotion", (req,res) => {
 
-    return res.send({"happy":"90","sad":"10"});
+    let params = {
+        'url': req.query.url,
+        'features': {
+            'entities': {
+                'emotion':true,
+                'limit':1
+            }
+        }
+    }
+
+    const NLU = getNLUInstance();
+
+    NLU.analyze(params)
+        .then( results => {
+            return res.send( JSON.stringify( results.result.entities[0].emotion ) );  
+        })
+        .catch( err => {
+            return res.send(`Could not complete operation: ${err}`);
+        })
 });
 
 app.get("/url/sentiment", (req,res) => {
-    return res.send("url sentiment for "+req.query.url);
+
+    let params = {
+        'url': req.query.url,
+        'features': {
+            'entities': {
+                'sentiment': true,
+                'limit':1
+            }
+        }
+    }
+
+    const NLU = getNLUInstance();
+
+    NLU.analyze( params )
+        .then( results => {
+            return res.send( JSON.stringify( results.result.entities[0].sentiment ));
+        })
+        .catch( err => {
+            return res.send(`Could not complete operation: ${err}`)
+        })
+
 });
 
 app.get("/text/emotion", (req,res) => {
-    return res.send({"happy":"10","sad":"90"});
+
+    let params = {
+        'text': req.query.text,
+        'features': {
+            'entities': {
+                'emotion':true,
+                'limit':1
+            }
+        }
+    }
+
+    const NLU = getNLUInstance();
+
+    NLU.analyze( params )
+        .then( results => {
+            console.log(results);
+            return res.send( JSON.stringify( results.result ));
+        })
+        .catch( err => {
+            return res.send(`Could not complete operation: ${err}`);
+        })
+
 });
 
 app.get("/text/sentiment", (req,res) => {
-    return res.send("text sentiment for "+req.query.text);
+
+    let params = {
+        'text': req.query.text,
+        'features': {
+            'entities': {
+                'sentiment':true,
+                'limit':1
+            }
+        }
+    }
+
+    const NLU = getNLUInstance();
+
+    NLU.analyze( params )
+        .then( results => {
+            return res.send( JSON.stringify( results.result.entities[0].sentiment ));
+        })
+        .catch( err => {
+            return res.send( `Could not complete operation: ${err}` );
+        })
+
 });
 
 let server = app.listen(8080, () => {
