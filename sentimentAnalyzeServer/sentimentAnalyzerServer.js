@@ -1,132 +1,173 @@
 const express = require('express');
 const app = new express();
-const dotenv = require('dotenv');
-dotenv.config();
-
-function getNLUInstance() {
-    let api_key = process.env.API_KEY;
-    let api_url = process.env.API_URL;
-
-    const NaturalLanguageUnderstandingV1 = require('ibm-watson/natural-language-understanding/v1');
-    const { IamAuthenticator } = require('ibm-watson/auth');
-
-    const naturalLanguageUnderstanding = new NaturalLanguageUnderstandingV1({
-        version: '2021-08-01',
-        authenticator: new IamAuthenticator({
-        apikey: api_key,
-    }),
-  serviceUrl: api_url,
-});
-return naturalLanguageUnderstanding;
-
-}
-
+//Not sure what the problem is here
 app.use(express.static('client'))
 
 const cors_app = require('cors');
 app.use(cors_app());
-
+//Says req is declared but never read? All other instances are. Why?
 app.get("/",(req,res)=>{
     res.render('index.html');
   });
 
 app.get("/url/emotion", (req,res) => {
-
-    let params = {
+    console.log(Object.getOwnPropertyNames(req))
+    console.log(req.query.url)
+    const nluInstance = getNLUInstance()
+    console.log(typeof nluInstance)
+    console.log(Object.getOwnPropertyNames(nluInstance))
+    const analyzeParams = {
         'url': req.query.url,
         'features': {
-            'entities': {
-                'emotion':true,
-                'limit':1
-            }
-        }
-    }
+            'emotion': {}
 
-    const NLU = getNLUInstance();
-
-    NLU.analyze(params)
-        .then( results => {
-            return res.send( JSON.stringify( results.result.entities[0].emotion ) );  
+        },
+    };
+    nluInstance.analyze(analyzeParams)
+        .then((analysisResults,responseResults) => {
+            console.log(JSON.stringify(analysisResults, null, 2));
+            responseResults= analysisResults.result.emotion.document.emotion;
+            console.log(responseResults)
+            console.log(typeof responseResults)
+            //Text response as well
+            const textResponse = `Text sentiment for ${req.query.text} : 
+             sadness: ${responseResults.sadness}, 
+             joy: ${responseResults.joy}, 
+             fear: ${responseResults.fear}, 
+             disgust: ${responseResults.disgust}, 
+             anger: ${responseResults.anger}`
+            return res.send(responseResults);
         })
-        .catch( err => {
-            return res.send(`Could not complete operation: ${err}`);
-        })
+        .catch(err => {
+            console.log('error:', err);
+            responseResults= JSON.parse(err.body).error;
+            return res.send(`Text emotion for \"${req.query.text}\": 
+            Error: ${responseResults}`);
+        });
 });
 
 app.get("/url/sentiment", (req,res) => {
+    console.log(Object.getOwnPropertyNames(req))
 
-    let params = {
+    console.log(req.query.url)
+    const nluInstance = getNLUInstance()
+
+    console.log(typeof nluInstance)
+    console.log(Object.getOwnPropertyNames(nluInstance))
+    let responseResults;
+    const analyzeParams = {
         'url': req.query.url,
         'features': {
-            'entities': {
-                'sentiment': true,
-                'limit':1
-            }
-        }
-    }
+            'sentiment': {}
 
-    const NLU = getNLUInstance();
-
-    NLU.analyze( params )
-        .then( results => {
-            return res.send( JSON.stringify( results.result.entities[0].sentiment ));
+        },
+    };
+    
+    nluInstance.analyze(analyzeParams)
+        .then((analysisResults,responseResults) => {
+            console.log(JSON.stringify(analysisResults, null, 2));
+            responseResults= analysisResults.result.sentiment.document;
+            console.log(responseResults)
+            console.log(typeof responseResults)
+            return res.send(responseResults.label);
         })
-        .catch( err => {
-            return res.send(`Could not complete operation: ${err}`)
-        })
-
+        .catch(err => {
+            console.log('error:', err);
+            responseResults= JSON.parse(err.body).error;
+            return res.send(`Text sentiment for \"${req.query.text}\": 
+            Error: ${responseResults}`);
+        });
 });
 
 app.get("/text/emotion", (req,res) => {
-
-    let params = {
-        'text': req.query.text,
+    console.log(Object.getOwnPropertyNames(req))
+    console.log(req.query.text)
+    const nluInstance = getNLUInstance()
+    console.log(typeof nluInstance)
+    console.log(Object.getOwnPropertyNames(nluInstance))
+    const analyzeParams = {
         'features': {
-            'entities': {
-                'emotion':true,
-                'limit':1
-            }
-        }
-    }
+            'emotion': {}
 
-    const NLU = getNLUInstance();
-
-    NLU.analyze( params )
-        .then( results => {
-            console.log(results);
-            return res.send( JSON.stringify( results.result ));
+        },
+        'text': req.query.text
+    };
+    nluInstance.analyze(analyzeParams)
+        .then((analysisResults,responseResults) => {
+            console.log(JSON.stringify(analysisResults, null, 2));
+            responseResults= analysisResults.result.emotion.document.emotion;
+            console.log(responseResults)
+            console.log(typeof responseResults)
+            const textResponse = `Text sentiment for ${req.query.text} : 
+             sadness: ${responseResults.sadness}, 
+             joy: ${responseResults.joy}, 
+             fear: ${responseResults.fear}, 
+             disgust: ${responseResults.disgust}, 
+             anger: ${responseResults.anger}`
+            return res.send(responseResults);
         })
-        .catch( err => {
-            return res.send(`Could not complete operation: ${err}`);
-        })
-
+        .catch(err => {
+            console.log('error:', err);
+            responseResults= JSON.parse(err.body).error;
+            return res.send(`Text emotion for \"${req.query.text}\": 
+            Error: ${responseResults}`);
+        });
+    
 });
 
 app.get("/text/sentiment", (req,res) => {
+    console.log(Object.getOwnPropertyNames(req))
 
-    let params = {
-        'text': req.query.text,
+    console.log(req.query.text)
+    const nluInstance = getNLUInstance()
+
+    console.log(typeof nluInstance)
+    console.log(Object.getOwnPropertyNames(nluInstance))
+    let responseResults;
+    const analyzeParams = {
         'features': {
-            'entities': {
-                'sentiment':true,
-                'limit':1
-            }
-        }
-    }
+            'sentiment': {}
 
-    const NLU = getNLUInstance();
-
-    NLU.analyze( params )
-        .then( results => {
-            return res.send( JSON.stringify( results.result.entities[0].sentiment ));
+        },
+        'text': req.query.text
+    };
+    
+    nluInstance.analyze(analyzeParams)
+        .then((analysisResults,responseResults) => {
+            console.log(JSON.stringify(analysisResults, null, 2));
+            responseResults= analysisResults.result.sentiment.document;
+            console.log(responseResults)
+            console.log(typeof responseResults)
+            return res.send(responseResults.label);
         })
-        .catch( err => {
-            return res.send( `Could not complete operation: ${err}` );
-        })
-
+        .catch(err => {
+            console.log('error:', err);
+            responseResults= JSON.parse(err.body).error;
+            return res.send(`Text sentiment for \"${req.query.text}\": 
+            Error: ${responseResults}`);
+        });
+    
 });
 
 let server = app.listen(8080, () => {
     console.log('Listening', server.address().port)
 })
 
+const dotenv = require('dotenv');
+dotenv.config();
+
+function getNLUInstance(){
+    let api_key = process.env.API_KEY;
+    let api_url = process.env.API_URL;
+    const NaturalLanguageUnderstandingV1 = require('ibm-watson/natural-language-understanding/v1');
+    const { IamAuthenticator } = require('ibm-watson/auth');
+
+    const naturalLanguageUnderstanding = new NaturalLanguageUnderstandingV1({
+        version: '2021-03-25',
+        authenticator: new IamAuthenticator({
+            apikey: api_key,
+        }),
+    serviceUrl: api_url,
+});
+    return naturalLanguageUnderstanding;
+}
