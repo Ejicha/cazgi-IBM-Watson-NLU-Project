@@ -1,4 +1,5 @@
 const express = require('express');
+
 const app = new express();
 //Not sure what the problem is here
 app.use(express.static('client'))
